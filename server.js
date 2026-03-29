@@ -45,10 +45,20 @@ app.post("/blogs", async (req, res) => {
     }
 });
 
-// GET ALL BLOGS
+// GET ALL BLOGS (with pagination)
 app.get("/blogs", async (req, res) => {
     try {
-        const blogs = await Blog.find().sort({ createdAt: -1 }).limit(100).lean();
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 20;
+        const skip = (page - 1) * limit;
+
+        const blogs = await Blog.find()
+            .select("-content") // Optimize: Skip large content field for the list view
+            .sort({ createdAt: -1 })
+            .skip(skip)
+            .limit(limit)
+            .lean();
+            
         res.json(blogs);
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -103,10 +113,20 @@ app.post("/events", async (req, res) => {
     }
 });
 
-// GET ALL EVENTS
+// GET ALL EVENTS (with pagination)
 app.get("/events", async (req, res) => {
     try {
-        const events = await Event.find().sort({ createdAt: -1 }).limit(100).lean();
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 20;
+        const skip = (page - 1) * limit;
+
+        const events = await Event.find()
+            .select("-description") // Optimize: Skip large description field
+            .sort({ createdAt: -1 })
+            .skip(skip)
+            .limit(limit)
+            .lean();
+
         res.json(events);
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -161,10 +181,19 @@ app.post("/event-inquiries", async (req, res) => {
     }
 });
 
-// GET ALL EVENT INQUIRIES
+// GET ALL EVENT INQUIRIES (with pagination)
 app.get("/event-inquiries", async (req, res) => {
     try {
-        const inquiries = await EventInquiry.find().sort({ createdAt: -1 }).limit(100).lean();
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 50;
+        const skip = (page - 1) * limit;
+
+        const inquiries = await EventInquiry.find()
+            .sort({ createdAt: -1 })
+            .skip(skip)
+            .limit(limit)
+            .lean();
+
         res.json(inquiries);
     } catch (err) {
         res.status(500).json({ error: err.message });
