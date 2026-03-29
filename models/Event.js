@@ -30,9 +30,21 @@ const eventSchema = new mongoose.Schema(
             type: String,
             required: true
         },
+         summary: {
+            type: String,
+            default: ""
+        },
         description: {
             type: String,
             required: true
+        },
+      whatYoullLearn: {
+            type: String,
+            default: ""
+        },
+        whoThisSessionIsFor: {
+            type: String,
+            default: ""
         },
         registrationLink: {
             type: String,
