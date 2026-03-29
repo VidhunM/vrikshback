@@ -34,14 +34,12 @@ const eventSchema = new mongoose.Schema(
             type: String,
             required: true
         },
-        whatYoullLearn: {
+      whatYoullLearn: {
             type: String,
-            required: true,
             default: ""
         },
         whoThisSessionIsFor: {
             type: String,
-            required: true,
             default: ""
         },
         registrationLink: {
