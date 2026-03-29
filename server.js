@@ -57,12 +57,12 @@ app.post("/blogs", async (req, res) => {
 app.get("/blogs", async (req, res) => {
     try {
         const page = parseInt(req.query.page) || 1;
-        const limit = parseInt(req.query.limit) || 20;
+        const limit = parseInt(req.query.limit) || 10; // reduced limit to 10 for better performance
         const skip = (page - 1) * limit;
         const includeContent = req.query.includeContent === "true";
 
         const blogs = await Blog.find()
-            .select(includeContent ? "" : "-content") // Include full content only when requested
+            .select(includeContent ? "" : "-content -image") // Exclude BOTH content and image by default for the lightest possible response
             .sort({ createdAt: -1 })
             .skip(skip)
             .limit(limit)
