@@ -51,14 +51,15 @@ app.get("/blogs", async (req, res) => {
         const page = parseInt(req.query.page) || 1;
         const limit = parseInt(req.query.limit) || 20;
         const skip = (page - 1) * limit;
+        const includeContent = req.query.includeContent === "true";
 
         const blogs = await Blog.find()
-            .select("-content") // Optimize: Skip large content field for the list view
+            .select(includeContent ? "" : "-content") // Include full content only when requested
             .sort({ createdAt: -1 })
             .skip(skip)
             .limit(limit)
             .lean();
-            
+
         res.json(blogs);
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -69,6 +70,9 @@ app.get("/blogs", async (req, res) => {
 app.get("/blogs/:id", async (req, res) => {
     try {
         const blog = await Blog.findById(req.params.id);
+        if (!blog) {
+            return res.status(404).json({ error: "Blog not found" });
+        }
         res.json(blog);
     } catch (err) {
         res.status(500).json({ error: err.message });
