@@ -1,16 +1,34 @@
 const express = require("express");
 const cors = require("cors");
 const mongoose = require("mongoose");
+const sharp = require("sharp");
 const Blog = require("./models/Blog");
 const Event = require("./models/Event");
 const EventInquiry = require("./models/EventInquiry");
+
+// ✅ Helper to optimize large images before saving to MongoDB
+const optimizeImage = async (base64Str) => {
+    if (!base64Str || !base64Str.startsWith("data:image")) return base64Str;
+    try {
+        const parts = base64Str.split(";base64,");
+        const buffer = Buffer.from(parts[1], "base64");
+        const resizedBuffer = await sharp(buffer)
+            .resize({ width: 1000, withoutEnlargement: true }) // optimized width
+            .jpeg({ quality: 80 }) // 80% quality compression
+            .toBuffer();
+        return `data:image/jpeg;base64,${resizedBuffer.toString("base64")}`;
+    } catch (err) {
+        console.error("Image optimization failed, saving original:", err.message);
+        return base64Str;
+    }
+};
 
 const app = express();
 
 // Middleware
 app.use(cors());
-app.use(express.json({ limit: "100mb" }));
-app.use(express.urlencoded({ limit: "100mb", extended: true }));
+app.use(express.json({ limit: "150mb" })); // allowed for initial upload (sharp will shrink it before storage)
+app.use(express.urlencoded({ limit: "150mb", extended: true }));
 
 // Error handling for large payloads
 app.use((err, req, res, next) => {
@@ -45,7 +63,11 @@ app.get("/", (req, res) => {
 // CREATE BLOG
 app.post("/blogs", async (req, res) => {
     try {
-        const blog = new Blog(req.body);
+        const blogData = req.body;
+        if (blogData.image) {
+            blogData.image = await optimizeImage(blogData.image);
+        }
+        const blog = new Blog(blogData);
         await blog.save();
         res.json(blog);
     } catch (err) {
@@ -53,16 +75,16 @@ app.post("/blogs", async (req, res) => {
     }
 });
 
-// GET ALL BLOGS (with pagination)
+// GET ALL BLOGS (with pagination & optimized payload)
 app.get("/blogs", async (req, res) => {
     try {
         const page = parseInt(req.query.page) || 1;
-        const limit = parseInt(req.query.limit) || 10; // reduced limit to 10 for better performance
+        const limit = parseInt(req.query.limit) || 12; // 12 is better for standard card grids
         const skip = (page - 1) * limit;
         const includeContent = req.query.includeContent === "true";
 
         const blogs = await Blog.find()
-            .select(includeContent ? "" : "-content -image") // Exclude BOTH content and image by default for the lightest possible response
+            .select(includeContent ? "" : "-content") // IMAGE is definitely RESTORED here
             .sort({ createdAt: -1 })
             .skip(skip)
             .limit(limit)
@@ -117,7 +139,11 @@ app.delete("/blogs/:id", async (req, res) => {
 // CREATE EVENT
 app.post("/events", async (req, res) => {
     try {
-        const event = new Event(req.body);
+        const eventData = req.body;
+        if (eventData.image) {
+            eventData.image = await optimizeImage(eventData.image);
+        }
+        const event = new Event(eventData);
         await event.save();
         res.json(event);
     } catch (err) {
@@ -129,11 +155,11 @@ app.post("/events", async (req, res) => {
 app.get("/events", async (req, res) => {
     try {
         const page = parseInt(req.query.page) || 1;
-        const limit = parseInt(req.query.limit) || 20;
+        const limit = parseInt(req.query.limit) || 12;
         const skip = (page - 1) * limit;
 
         const events = await Event.find()
-            .select("-description") // Optimize: Skip large description field
+            .select("-description") // IMAGE is definitely RESTORED here as well
             .sort({ createdAt: -1 })
             .skip(skip)
             .limit(limit)
