@@ -112,9 +112,13 @@ app.get("/blogs/:id", async (req, res) => {
 // UPDATE BLOG
 app.put("/blogs/:id", async (req, res) => {
     try {
+        const blogData = req.body;
+        if (blogData.image) {
+            blogData.image = await optimizeImage(blogData.image);
+        }
         const updatedBlog = await Blog.findByIdAndUpdate(
             req.params.id,
-            req.body,
+            blogData,
             { new: true }
         );
         res.json(updatedBlog);
