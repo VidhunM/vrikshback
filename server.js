@@ -48,7 +48,7 @@ app.post("/blogs", async (req, res) => {
 // GET ALL BLOGS
 app.get("/blogs", async (req, res) => {
     try {
-        const blogs = await Blog.find().sort({ createdAt: -1 });
+        const blogs = await Blog.find().sort({ createdAt: -1 }).allowDiskUse(true);
         res.json(blogs);
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -106,7 +106,7 @@ app.post("/events", async (req, res) => {
 // GET ALL EVENTS
 app.get("/events", async (req, res) => {
     try {
-        const events = await Event.find().sort({ createdAt: -1 });
+        const events = await Event.find().sort({ createdAt: -1 }).allowDiskUse(true);
         res.json(events);
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -164,7 +164,7 @@ app.post("/event-inquiries", async (req, res) => {
 // GET ALL EVENT INQUIRIES
 app.get("/event-inquiries", async (req, res) => {
     try {
-        const inquiries = await EventInquiry.find().sort({ createdAt: -1 });
+        const inquiries = await EventInquiry.find().sort({ createdAt: -1 }).allowDiskUse(true);
         res.json(inquiries);
     } catch (err) {
         res.status(500).json({ error: err.message });
