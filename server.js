@@ -23,12 +23,20 @@ app.use((err, req, res, next) => {
 
 // MongoDB Connection
 mongoose.connect("mongodb+srv://admin:admin123@cluster0.iec1idx.mongodb.net/vrikshDB?retryWrites=true&w=majority")
-    .then(() => console.log("MongoDB Connected"))
-    .catch(err => console.log(err));
+    .then(() => console.log("✅ MongoDB Connected: vrikshDB successfully connected."))
+    .catch(err => {
+        console.error("❌ MongoDB Connection Error:", err.message);
+        console.error("Full details:", err);
+    });
 
-// Test Route
+// Health Check Route (used by Render to verify the service is up)
+app.get("/health", (req, res) => {
+    res.status(200).json({ status: "ok", uptime: process.uptime() });
+});
+
+// Root Route
 app.get("/", (req, res) => {
-    res.send("API is running");
+    res.send("Vriksh Backend API is running...");
 });
 
 
