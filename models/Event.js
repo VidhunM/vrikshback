@@ -34,6 +34,16 @@ const eventSchema = new mongoose.Schema(
             type: String,
             required: true
         },
+        whatYoullLearn: {
+            type: String,
+            required: true,
+            default: ""
+        },
+        whoThisSessionIsFor: {
+            type: String,
+            required: true,
+            default: ""
+        },
         registrationLink: {
             type: String,
             default: "https://docs.google.com/forms/d/e/1FAIpQLScv1Mc0UCKWzHuRPmqcTKOmR7q6tqSrX9qWJQCtGlh7PbNitg/viewform"
