@@ -54,6 +54,6 @@ const eventSchema = new mongoose.Schema(
     { timestamps: true }
 );
 
-eventSchema.index({ createdAt: -1 });
+eventSchema.index({ updatedAt: -1 });
 
 module.exports = mongoose.model("Event", eventSchema);

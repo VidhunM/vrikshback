@@ -39,6 +39,14 @@ app.use((err, req, res, next) => {
     next(err);
 });
 
+// Disable caching for API responses so updates reflect immediately in the UI
+app.use((req, res, next) => {
+    res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+    res.setHeader("Pragma", "no-cache");
+    res.setHeader("Expires", "0");
+    next();
+});
+
 // MongoDB Connection
 mongoose.connect("mongodb+srv://admin:admin123@cluster0.iec1idx.mongodb.net/vrikshDB?retryWrites=true&w=majority")
     .then(() => console.log("✅ MongoDB Connected: vrikshDB successfully connected."))
@@ -90,7 +98,7 @@ app.get("/blogs", async (req, res) => {
 
         const blogs = await Blog.find()
             .select(selectFields)
-            .sort({ createdAt: -1 })
+            .sort({ updatedAt: -1 })
             .skip(skip)
             .limit(limit)
             .lean();
@@ -171,7 +179,7 @@ app.get("/events", async (req, res) => {
 
         const events = await Event.find()
             .select("-description") // IMAGE is definitely RESTORED here as well
-            .sort({ createdAt: -1 })
+            .sort({ updatedAt: -1 })
             .skip(skip)
             .limit(limit)
             .lean();
@@ -238,7 +246,7 @@ app.get("/event-inquiries", async (req, res) => {
         const skip = (page - 1) * limit;
 
         const inquiries = await EventInquiry.find()
-            .sort({ createdAt: -1 })
+            .sort({ updatedAt: -1 })
             .skip(skip)
             .limit(limit)
             .lean();

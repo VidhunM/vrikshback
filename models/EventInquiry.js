@@ -15,6 +15,6 @@ const eventInquirySchema = new mongoose.Schema(
     { timestamps: true }
 );
 
-eventInquirySchema.index({ createdAt: -1 });
+eventInquirySchema.index({ updatedAt: -1 });
 
 module.exports = mongoose.model("EventInquiry", eventInquirySchema);

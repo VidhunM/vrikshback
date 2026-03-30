@@ -32,6 +32,6 @@ const BlogSchema = new mongoose.Schema({
     timestamps: true
 });
 
-BlogSchema.index({ createdAt: -1 });
+BlogSchema.index({ updatedAt: -1 });
 
 module.exports = mongoose.model("Blog", BlogSchema);
