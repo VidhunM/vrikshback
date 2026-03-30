@@ -86,7 +86,8 @@ app.get("/blogs", async (req, res) => {
         const includeImage = req.query.includeImage === "true";
 
         const baseSelect = includeContent ? "" : "-content";
-        const selectFields = includeImage ? baseSelect : `${baseSelect} -image`;
+        const includeImageFlag = req.query.includeImage !== "false"; // default true unless explicitly false
+        const selectFields = includeImageFlag ? baseSelect : `${baseSelect} -image`;
 
         const blogs = await Blog.find()
             .select(selectFields)
