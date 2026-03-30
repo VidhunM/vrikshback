@@ -83,7 +83,7 @@ app.get("/blogs", async (req, res) => {
         limit = Math.min(limit, 50); // cap page size to avoid huge response
         const skip = (page - 1) * limit;
         const includeContent = req.query.includeContent === "true";
-        const includeImage = req.query.includeImage === "true";
+        const includeImage = req.query.includeImage !== "false"; // Default to true to show images on blog pages
 
         const baseSelect = includeContent ? "" : "-content";
         const selectFields = includeImage ? baseSelect : `${baseSelect} -image`;
