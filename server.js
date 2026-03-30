@@ -78,19 +78,26 @@ app.post("/blogs", async (req, res) => {
 // GET ALL BLOGS (with pagination & optimized payload)
 app.get("/blogs", async (req, res) => {
     try {
-        const page = parseInt(req.query.page) || 1;
-        const limit = parseInt(req.query.limit) || 12; // 12 is better for standard card grids
+        const page = Math.max(1, parseInt(req.query.page) || 1);
+        let limit = Math.max(1, parseInt(req.query.limit) || 12);
+        limit = Math.min(limit, 50); // cap page size to avoid huge response
         const skip = (page - 1) * limit;
         const includeContent = req.query.includeContent === "true";
+        const includeImage = req.query.includeImage === "true";
+
+        const baseSelect = includeContent ? "" : "-content";
+        const selectFields = includeImage ? baseSelect : `${baseSelect} -image`;
 
         const blogs = await Blog.find()
-            .select(includeContent ? "" : "-content") // IMAGE is definitely RESTORED here
+            .select(selectFields)
             .sort({ createdAt: -1 })
             .skip(skip)
             .limit(limit)
             .lean();
 
-        res.json(blogs);
+        const total = await Blog.countDocuments();
+
+        res.json({ total, page, limit, data: blogs });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
