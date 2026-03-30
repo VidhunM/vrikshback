@@ -83,10 +83,8 @@ app.get("/blogs", async (req, res) => {
         limit = Math.min(limit, 50); // cap page size to avoid huge response
         const skip = (page - 1) * limit;
         const includeContent = req.query.includeContent === "true";
-        const includeImage = req.query.includeImage === "true";
 
-        const baseSelect = includeContent ? "" : "-content";
-        const selectFields = includeImage ? baseSelect : `${baseSelect} -image`;
+        const selectFields = includeContent ? "" : "-content";
 
         const blogs = await Blog.find()
             .select(selectFields)
