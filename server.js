@@ -1,25 +1,34 @@
+require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
 const mongoose = require("mongoose");
-const sharp = require("sharp");
+const cloudinary = require("cloudinary").v2;
 const Blog = require("./models/Blog");
 const Event = require("./models/Event");
 const EventInquiry = require("./models/EventInquiry");
 
-// ✅ Helper to optimize large images before saving to MongoDB
-const optimizeImage = async (base64Str) => {
+// ✅ Cloudinary Configuration
+cloudinary.config({
+    cloudinary_url: process.env.CLOUDINARY_URL,
+    secure: true // Uses https
+});
+
+
+
+// ✅ Helper to upload base64 image to Cloudinary
+const uploadToCloudinary = async (base64Str, folder = "vriksh") => {
     if (!base64Str || !base64Str.startsWith("data:image")) return base64Str;
     try {
-        const parts = base64Str.split(";base64,");
-        const buffer = Buffer.from(parts[1], "base64");
-        const resizedBuffer = await sharp(buffer)
-            .resize({ width: 1000, withoutEnlargement: true }) // optimized width
-            .jpeg({ quality: 80 }) // 80% quality compression
-            .toBuffer();
-        return `data:image/jpeg;base64,${resizedBuffer.toString("base64")}`;
+        const result = await cloudinary.uploader.upload(base64Str, {
+            folder: folder,
+            resource_type: "image",
+            quality: "auto",
+            fetch_format: "auto"
+        });
+        return result.secure_url;
     } catch (err) {
-        console.error("Image optimization failed, saving original:", err.message);
-        return base64Str;
+        console.error("Cloudinary upload failed:", err.message);
+        throw new Error("Failed to upload image to Cloudinary");
     }
 };
 
@@ -48,7 +57,8 @@ app.use((req, res, next) => {
 });
 
 // MongoDB Connection
-mongoose.connect("mongodb+srv://admin:admin123@cluster0.iec1idx.mongodb.net/vrikshDB?retryWrites=true&w=majority")
+const MONGODB_URI = process.env.MONGODB_URI || "mongodb+srv://admin:admin123@cluster0.iec1idx.mongodb.net/vrikshDB?retryWrites=true&w=majority";
+mongoose.connect(MONGODB_URI)
     .then(() => console.log("✅ MongoDB Connected: vrikshDB successfully connected."))
     .catch(err => {
         console.error("❌ MongoDB Connection Error:", err.message);
@@ -73,7 +83,7 @@ app.post("/blogs", async (req, res) => {
     try {
         const blogData = req.body;
         if (blogData.image) {
-            blogData.image = await optimizeImage(blogData.image);
+            blogData.image = await uploadToCloudinary(blogData.image, "vriksh/blogs");
         }
         const blog = new Blog(blogData);
         await blog.save();
@@ -128,8 +138,8 @@ app.get("/blogs/:id", async (req, res) => {
 app.put("/blogs/:id", async (req, res) => {
     try {
         const blogData = req.body;
-        if (blogData.image) {
-            blogData.image = await optimizeImage(blogData.image);
+        if (blogData.image && blogData.image.startsWith("data:image")) {
+            blogData.image = await uploadToCloudinary(blogData.image, "vriksh/blogs");
         }
         const updatedBlog = await Blog.findByIdAndUpdate(
             req.params.id,
@@ -160,7 +170,7 @@ app.post("/events", async (req, res) => {
     try {
         const eventData = req.body;
         if (eventData.image) {
-            eventData.image = await optimizeImage(eventData.image);
+            eventData.image = await uploadToCloudinary(eventData.image, "vriksh/events");
         }
         const event = new Event(eventData);
         await event.save();
@@ -203,9 +213,13 @@ app.get("/events/:id", async (req, res) => {
 // UPDATE EVENT
 app.put("/events/:id", async (req, res) => {
     try {
+        const eventData = req.body;
+        if (eventData.image && eventData.image.startsWith("data:image")) {
+            eventData.image = await uploadToCloudinary(eventData.image, "vriksh/events");
+        }
         const updatedEvent = await Event.findByIdAndUpdate(
             req.params.id,
-            req.body,
+            eventData,
             { new: true }
         );
         res.json(updatedEvent);
