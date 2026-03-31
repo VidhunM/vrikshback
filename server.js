@@ -134,6 +134,32 @@ app.get("/blogs/:id", async (req, res) => {
     }
 });
 
+// GET SINGLE BLOG IMAGE (for extremely fast, cacheable frontend loading)
+app.get("/blogs/:id/image", async (req, res) => {
+    try {
+        const blog = await Blog.findById(req.params.id).select("image");
+        if (!blog || !blog.image) {
+            return res.status(404).json({ error: "Image not found" });
+        }
+        
+        // Extract base64 and content-type
+        const matches = blog.image.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
+        if (!matches || matches.length !== 3) {
+            // Fallback for regular URLs and non-base64 formats
+            return res.redirect(blog.image);
+        }
+        
+        const contentType = matches[1];
+        const buffer = Buffer.from(matches[2], 'base64');
+        
+        res.set('Content-Type', contentType);
+        res.set('Cache-Control', 'public, max-age=31536000'); // 1 year cache
+        res.send(buffer);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
 // UPDATE BLOG
 app.put("/blogs/:id", async (req, res) => {
     try {
@@ -187,8 +213,11 @@ app.get("/events", async (req, res) => {
         const limit = parseInt(req.query.limit) || 12;
         const skip = (page - 1) * limit;
 
+        const includeImage = req.query.includeImage !== "false"; // Default true
+        const selectFields = includeImage ? "-description" : "-description -image";
+
         const events = await Event.find()
-            .select("-description") // IMAGE is definitely RESTORED here as well
+            .select(selectFields)
             .sort({ updatedAt: -1 })
             .skip(skip)
             .limit(limit)
@@ -205,6 +234,31 @@ app.get("/events/:id", async (req, res) => {
     try {
         const event = await Event.findById(req.params.id);
         res.json(event);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// GET SINGLE EVENT IMAGE (cacheable, parallelized fetch for frontend)
+app.get("/events/:id/image", async (req, res) => {
+    try {
+        const event = await Event.findById(req.params.id).select("image");
+        if (!event || !event.image) {
+            return res.status(404).json({ error: "Image not found" });
+        }
+        
+        const matches = event.image.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
+        if (!matches || matches.length !== 3) {
+            // Fallback for regular URL or missing base64 syntax
+            return res.redirect(event.image);
+        }
+        
+        const contentType = matches[1];
+        const buffer = Buffer.from(matches[2], 'base64');
+        
+        res.set('Content-Type', contentType);
+        res.set('Cache-Control', 'public, max-age=31536000'); // Cache for 1 yr
+        res.send(buffer);
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
